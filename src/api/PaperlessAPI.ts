@@ -13,7 +13,7 @@ export class PaperlessAPI {
     const url = `${this.baseUrl}/api${path}`;
     const headers = {
       Authorization: `Token ${this.token}`,
-      Accept: "application/json; version=5",
+      Accept: "application/json; version=9",
       "Content-Type": "application/json",
       "Accept-Language": "en-US,en;q=0.9",
     };
