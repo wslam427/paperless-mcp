@@ -4,6 +4,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import express from "express";
 import { PaperlessAPI } from "./api/PaperlessAPI";
+import { positionalArgs, resolveLocalConfig } from "./config";
 import { registerCorrespondentTools } from "./tools/correspondents";
 import { registerDocumentTools } from "./tools/documents";
 import { registerDocumentTypeTools } from "./tools/documentTypes";
@@ -33,14 +34,15 @@ async function main() {
       process.exit(1);
     }
   } else {
-    baseUrl = args[0];
-    token = args[1];
+    const cfg = resolveLocalConfig(positionalArgs(args));
+    baseUrl = cfg.baseUrl;
+    token = cfg.token;
     if (!baseUrl || !token) {
       console.error(
         "Usage: paperless-mcp <baseUrl> <token> [--http] [--port <port>]"
       );
       console.error(
-        "Example: paperless-mcp http://localhost:8000 your-api-token --http --port 3000"
+        "Or, with no arguments: set PAPERLESS_URL and PAPERLESS_API_KEY in the environment or in .env (path override: PAPERLESS_ENV_FILE)."
       );
       console.error(
         "When using --http, PAPERLESS_URL and API_KEY environment variables must be set."
