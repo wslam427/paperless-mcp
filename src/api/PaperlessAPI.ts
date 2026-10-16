@@ -1,3 +1,5 @@
+import { guardedFetch } from "./guard";
+
 export class PaperlessAPI {
   constructor(
     private readonly baseUrl: string,
@@ -16,7 +18,7 @@ export class PaperlessAPI {
       "Accept-Language": "en-US,en;q=0.9",
     };
 
-    const response = await fetch(url, {
+    const response = await guardedFetch(url, {
       ...options,
       headers: {
         ...headers,
@@ -40,6 +42,7 @@ export class PaperlessAPI {
 
   // Document operations
   async bulkEditDocuments(documents, method, parameters = {}) {
+    // guardedFetch also re-checks the method against the allow-list
     return this.request("/documents/bulk_edit/", {
       method: "POST",
       body: JSON.stringify({
@@ -80,7 +83,7 @@ export class PaperlessAPI {
       );
     }
 
-    const response = await fetch(
+    const response = await guardedFetch(
       `${this.baseUrl}/api/documents/post_document/`,
       {
         method: "POST",
@@ -131,7 +134,7 @@ export class PaperlessAPI {
 
   async downloadDocument(id, asOriginal = false) {
     const query = asOriginal ? "?original=true" : "";
-    const response = await fetch(
+    const response = await guardedFetch(
       `${this.baseUrl}/api/documents/${id}/download/${query}`,
       {
         headers: {
@@ -161,11 +164,6 @@ export class PaperlessAPI {
     });
   }
 
-  async deleteTag(id) {
-    return this.request(`/tags/${id}/`, {
-      method: "DELETE",
-    });
-  }
 
   // Correspondent operations
   async getCorrespondents() {
@@ -191,16 +189,4 @@ export class PaperlessAPI {
     });
   }
 
-  // Bulk object operations
-  async bulkEditObjects(objects, objectType, operation, parameters = {}) {
-    return this.request("/bulk_edit_objects/", {
-      method: "POST",
-      body: JSON.stringify({
-        objects,
-        object_type: objectType,
-        operation,
-        ...parameters,
-      }),
-    });
-  }
 }

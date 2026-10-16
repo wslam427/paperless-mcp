@@ -48,53 +48,5 @@ export function registerTagTools(server, api) {
     }
   );
 
-  server.tool(
-    "delete_tag",
-    "Permanently delete a tag from the system. This removes the tag from all documents that currently use it. Use with caution as this action cannot be undone.",
-    {
-      id: z.number().describe("ID of the tag to permanently delete. This will remove the tag from all documents that currently use it. Use list_tags to find tag IDs."),
-    },
-    async (args, extra) => {
-      if (!api) throw new Error("Please configure API connection first");
-      return api.deleteTag(args.id);
-    }
-  );
 
-  server.tool(
-    "bulk_edit_tags",
-    "Perform bulk operations on multiple tags: set permissions to control access or permanently delete multiple tags at once. Efficient for managing large tag collections.",
-    {
-      tag_ids: z.array(z.number()).describe("Array of tag IDs to perform bulk operations on. Use list_tags to get valid tag IDs."),
-      operation: z.enum(["set_permissions", "delete"]).describe("Bulk operation: 'set_permissions' to control who can use these tags, 'delete' to permanently remove all specified tags from the system."),
-      owner: z.number().optional().describe("User ID to set as owner when operation is 'set_permissions'. Owner has full control over the tags."),
-      permissions: z
-        .object({
-          view: z.object({
-            users: z.array(z.number()).optional().describe("User IDs who can see and use these tags"),
-            groups: z.array(z.number()).optional().describe("Group IDs who can see and use these tags"),
-          }).describe("Users and groups with view/use permissions for these tags"),
-          change: z.object({
-            users: z.array(z.number()).optional().describe("User IDs who can modify these tags (name, color, matching rules)"),
-            groups: z.array(z.number()).optional().describe("Group IDs who can modify these tags"),
-          }).describe("Users and groups with edit permissions for these tags"),
-        })
-        .optional().describe("Permission settings when operation is 'set_permissions'. Defines who can view/use and modify these tags."),
-      merge: z.boolean().optional().describe("Whether to merge with existing permissions (true) or replace them entirely (false). Default is false."),
-    },
-    async (args, extra) => {
-      if (!api) throw new Error("Please configure API connection first");
-      return api.bulkEditObjects(
-        args.tag_ids,
-        "tags",
-        args.operation,
-        args.operation === "set_permissions"
-          ? {
-              owner: args.owner,
-              permissions: args.permissions,
-              merge: args.merge,
-            }
-          : {}
-      );
-    }
-  );
 }
