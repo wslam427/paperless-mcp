@@ -1,9 +1,10 @@
 import { z } from "zod";
+import { assertSafeBulkMethod } from "../api/guard";
 
 export function registerDocumentTools(server, api) {
   server.tool(
     "bulk_edit_documents",
-    "Perform bulk operations on multiple documents simultaneously: set correspondent/type/tags, delete, reprocess, merge, split, rotate, or manage permissions. Efficient for managing large document collections.",
+    "Perform bulk operations on multiple documents simultaneously: set correspondent/type/storage path, add/remove/modify tags, or reprocess (delete-free fork: delete, merge, split, rotate, delete_pages and set_permissions are removed). Efficient for managing large document collections.",
     {
       documents: z.array(z.number()).describe("Array of document IDs to perform bulk operations on. Get document IDs from search_documents first."),
       method: z.enum([
@@ -13,46 +14,19 @@ export function registerDocumentTools(server, api) {
         "add_tag",
         "remove_tag",
         "modify_tags",
-        "delete",
         "reprocess",
-        "set_permissions",
-        "merge",
-        "split",
-        "rotate",
-        "delete_pages",
-      ]).describe("The bulk operation to perform: set_correspondent (assign sender/receiver), set_document_type (categorize documents), set_storage_path (organize file location), add_tag/remove_tag/modify_tags (manage labels), delete (permanently remove), reprocess (re-run OCR/indexing), set_permissions (control access), merge (combine documents), split (separate into multiple), rotate (adjust orientation), delete_pages (remove specific pages)"),
+      ]).describe("The bulk operation to perform: set_correspondent, set_document_type, set_storage_path, add_tag/remove_tag/modify_tags (manage labels on documents), reprocess (re-run OCR/indexing)"),
       correspondent: z.number().optional().describe("ID of correspondent to assign when method is 'set_correspondent'. Use list_correspondents to get valid IDs."),
       document_type: z.number().optional().describe("ID of document type to assign when method is 'set_document_type'. Use list_document_types to get valid IDs."),
       storage_path: z.number().optional().describe("ID of storage path to assign when method is 'set_storage_path'. Storage paths organize documents in folder hierarchies."),
       tag: z.number().optional().describe("Single tag ID to add or remove when method is 'add_tag' or 'remove_tag'. Use list_tags to get valid IDs."),
       add_tags: z.array(z.number()).optional().describe("Array of tag IDs to add when method is 'modify_tags'. Use list_tags to get valid IDs."),
       remove_tags: z.array(z.number()).optional().describe("Array of tag IDs to remove when method is 'modify_tags'. Use list_tags to get valid IDs."),
-      permissions: z
-        .object({
-          owner: z.number().nullable().optional().describe("User ID to set as document owner, or null to remove ownership"),
-          set_permissions: z
-            .object({
-              view: z.object({
-                users: z.array(z.number()).describe("User IDs granted view permission"),
-                groups: z.array(z.number()).describe("Group IDs granted view permission"),
-              }).describe("Users and groups who can view these documents"),
-              change: z.object({
-                users: z.array(z.number()).describe("User IDs granted edit permission"),
-                groups: z.array(z.number()).describe("Group IDs granted edit permission"),
-              }).describe("Users and groups who can edit these documents"),
-            })
-            .optional().describe("Specific permission settings for users and groups"),
-          merge: z.boolean().optional().describe("Whether to merge with existing permissions (true) or replace them (false)"),
-        })
-        .optional().describe("Permission settings when method is 'set_permissions'. Controls who can view and edit the documents."),
-      metadata_document_id: z.number().optional().describe("Source document ID when merging documents. The metadata from this document will be preserved."),
-      delete_originals: z.boolean().optional().describe("Whether to delete original documents after merge/split operations. Use with caution."),
-      pages: z.string().optional().describe("Page specification for delete_pages method. Format: '1,3,5-7' to delete pages 1, 3, and 5 through 7."),
-      degrees: z.number().optional().describe("Rotation angle in degrees when method is 'rotate'. Use 90, 180, or 270 for standard rotations."),
     },
     async (args, extra) => {
       if (!api) throw new Error("Please configure API connection first");
       const { documents, method, ...parameters } = args;
+      assertSafeBulkMethod(method);
       return api.bulkEditDocuments(documents, method, parameters);
     }
   );
